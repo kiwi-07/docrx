@@ -1,0 +1,24 @@
+id: DRX015
+title: Wildcard COPY of broad paths
+severity: LOW
+category: cache
+tags:
+  - copy
+  - wildcard
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: COPY
+      args_match: "\\*|\\*\\*"
+recommendation: |
+  Prefer explicit COPY paths for dependency manifests and source
+  trees. Broad wildcards enlarge the build context fingerprint and
+  bust cache more often.
+estimated_saving:
+  build_time: "10–40%"
+  confidence: heuristic
+reason: Wildcard COPY changes invalidate cache whenever any matched file changes.
+references:
+  - https://docs.docker.com/reference/dockerfile/#copy

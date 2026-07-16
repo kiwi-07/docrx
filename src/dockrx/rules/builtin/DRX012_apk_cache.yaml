@@ -1,0 +1,25 @@
+id: DRX012
+title: APK cache not cleaned
+severity: MEDIUM
+category: size
+tags:
+  - apk
+  - alpine
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: RUN
+      args_match: "apk\\s+add"
+    - not:
+        instruction: RUN
+        args_match: "--no-cache|rm\\s+-rf\\s+/var/cache/apk"
+recommendation: |
+  Use apk add --no-cache, or delete /var/cache/apk/* in the same RUN.
+estimated_saving:
+  image_size: "~5–30 MB"
+  confidence: heuristic
+reason: Alpine package indexes inflate the layer when left behind.
+references:
+  - https://docs.docker.com/build/building/best-practices/#apk

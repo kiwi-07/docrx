@@ -1,0 +1,26 @@
+id: DRX017
+title: pip install after full source COPY
+severity: HIGH
+category: cache
+tags:
+  - pip
+  - caching
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: COPY
+      args_match: "^(?:--\\S+\\s+)*\\.(?:/\\S*)?(?:\\s|$)"
+      before:
+        instruction: RUN
+        args_match: "pip(\\d*)\\s+install"
+recommendation: |
+  Copy requirements/pyproject first, install dependencies, then
+  COPY the application source so dependency layers stay cached.
+estimated_saving:
+  build_time: "30–80%"
+  confidence: heuristic
+reason: Full-tree COPY before pip install rebuilds dependencies on every code change.
+references:
+  - https://docs.docker.com/build/cache/

@@ -1,0 +1,28 @@
+id: DRX011
+title: npm cache not cleaned
+severity: MEDIUM
+category: size
+tags:
+  - npm
+  - cache
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: RUN
+      args_match: "npm\\s+(ci|install)"
+    - not:
+        instruction: RUN
+        args_match: "npm\\s+cache\\s+clean|--prefer-offline|rm\\s+-rf\\s+.*npm"
+recommendation: |
+  Prefer npm ci for reproducible installs and clear the npm cache
+  in the same RUN when using a full Node base image:
+
+    && npm cache clean --force
+estimated_saving:
+  image_size: "~10–50 MB"
+  confidence: heuristic
+reason: npm may leave a local cache in the image layer.
+references:
+  - https://docs.npmjs.com/cli/v10/commands/npm-cache

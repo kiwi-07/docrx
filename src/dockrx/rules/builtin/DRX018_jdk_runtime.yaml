@@ -1,0 +1,31 @@
+id: DRX018
+title: JDK base image in runtime stage
+severity: HIGH
+category: size
+tags:
+  - java
+  - jdk
+  - jre
+  - runtime
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: FROM
+      args_match: "(-jdk|/jdk|:jdk)(\\s|$|-)"
+      stage: final
+recommendation: |
+  Use a JRE or distroless Java runtime for the final stage when you only
+  run a packaged JAR. JDK images ship compilers, javadoc, and tooling
+  you do not need at runtime.
+
+  Examples:
+    eclipse-temurin:21-jre-jammy
+    gcr.io/distroless/java21-debian12
+reason: JDK images are typically 100–300 MB larger than JRE equivalents.
+estimated_saving:
+  image_size: "~100–300 MB"
+  confidence: heuristic
+references:
+  - https://docs.docker.com/build/building/best-practices/#use-multi-stage-builds

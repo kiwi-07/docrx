@@ -1,0 +1,6 @@
+# Intentionally bad Maven cache ordering
+FROM maven:3.9.9-eclipse-temurin-21-jammy
+
+WORKDIR /app
+COPY . .
+RUN mvn -B package -DskipTests

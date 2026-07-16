@@ -1,0 +1,117 @@
+[project]
+name = "dockrx"
+version = "0.1.0"
+description = "Analyze Dockerfiles. Explain size, caching, and security problems with actionable fixes."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "ankit-akteena", email = "ankitp@akteena.com" }
+]
+requires-python = ">=3.12"
+keywords = ["docker", "dockerfile", "optimization", "lint", "cache", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "pydantic>=2.13.4",
+    "pyyaml>=6.0.3",
+    "rich>=15.0.0",
+    "typer>=0.27.0",
+]
+
+[project.scripts]
+dockrx = "dockrx.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/kiwi-07/docrx"
+Repository = "https://github.com/kiwi-07/docrx"
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=6.1.1",
+    "ruff>=0.11.5",
+    "pyright>=1.1.397",
+    "pre-commit>=4.2.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+filterwarnings = ["error"]
+addopts = "-v --tb=short --no-header"
+
+[tool.coverage.run]
+source = ["src/dockrx"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 60
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "RUF", # ruff-specific
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+]
+ignore = [
+    "E501",  # line length handled by formatter
+    "E731",  # lambda assignment (valid in some cases)
+    "SIM117", # nested with statements (sometimes clearer)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N802", "N803", "N806", "S101"]
+"src/dockrx/cli.py" = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pyright]
+pythonVersion = "3.12"
+pythonPlatform = "All"
+typeCheckingMode = "standard"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownArgumentType = false
+include = ["src", "tests"]
+exclude = ["**/__pycache__", "**/.eggs"]
+
+[tool.uv.build-backend]
+module-name = "dockrx"
+module-root = "src"
+source-include = ["src/dockrx/rules/builtin/*.yaml"]
+
+# ── DockRx project configuration ────────────────────────────────────────────
+# Users can override any of these in their own pyproject.toml under [tool.dockrx]
+[tool.dockrx]
+log-level = "WARNING"
+fail-on-severity = "HIGH"
+default-fix-limit = 3
+health-thresholds = { excellent = 90, good = 75, fair = 60, needs-attention = 40 }

@@ -1,0 +1,29 @@
+id: DRX019
+title: Debug networking tools in runtime stage
+severity: MEDIUM
+category: security
+tags:
+  - apt
+  - debug
+  - networking
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: RUN
+      stage: final
+      args_match: "apt(-get)?\\s+install.*(iputils-ping|\\btelnet\\b|traceroute|net-tools|\\bnetcat\\b|nmap|tcpdump|bind9-dnsutils|\\bdnsutils\\b)"
+recommendation: |
+  Avoid installing ping, telnet, traceroute, netcat, and similar debug
+  packages in production runtime images. They increase size and attack
+  surface.
+
+  Prefer ephemeral debug containers, kubectl debug, or docker debug.
+  Keep curl/wget only when required for HEALTHCHECK.
+reason: Debug tooling is useful during incidents but rarely belongs in shipped images.
+estimated_saving:
+  image_size: "~15–80 MB"
+  confidence: heuristic
+references:
+  - https://docs.docker.com/build/building/best-practices/

@@ -1,0 +1,34 @@
+id: DRX020
+title: COPY before Maven build
+severity: HIGH
+category: cache
+tags:
+  - maven
+  - java
+  - caching
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: COPY
+      args_match: "^(?:--\\S+\\s+)*\\.(?:/\\S*)?(?:\\s|$)"
+      before:
+        instruction: RUN
+        args_match: "\\bmvn\\b"
+recommendation: |
+  Copy Maven POM files (and parent pom.xml) before source trees so
+  dependency resolution stays cacheable.
+
+  Pattern:
+    COPY pom.xml .
+    COPY module/pom.xml module/pom.xml
+    RUN mvn dependency:go-offline
+    COPY module/src module/src
+    RUN mvn package
+estimated_saving:
+  build_time: "30–80%"
+  confidence: heuristic
+reason: Full-tree COPY before mvn rebuilds dependencies on every source change.
+references:
+  - https://docs.docker.com/build/cache/

@@ -1,0 +1,19 @@
+id: DRX006
+title: Missing LABEL metadata
+severity: INFO
+category: best_practices
+tags:
+  - labels
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: LABEL
+      missing: true
+recommendation: |
+  Add LABEL metadata (org.opencontainers.image.* or maintainer,
+  version, description) to make images discoverable and operable.
+reason: Labels help registries, scanners, and operators identify images.
+references:
+  - https://github.com/opencontainers/image-spec/blob/main/annotations.md

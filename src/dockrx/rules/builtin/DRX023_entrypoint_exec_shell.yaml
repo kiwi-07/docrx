@@ -1,0 +1,28 @@
+id: DRX023
+title: Shell ENTRYPOINT with exec
+severity: MEDIUM
+category: maintainability
+tags:
+  - entrypoint
+  - shell
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: ENTRYPOINT
+      stage: final
+      args_match: "^exec\\s+"
+recommendation: |
+  Use JSON-array ENTRYPOINT/CMD instead of shell form with exec.
+
+  Bad:
+    ENTRYPOINT exec java $JAVA_OPTS -jar app.jar
+
+  Good:
+    ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+  Pass JAVA_OPTS via ENV or an entrypoint script if expansion is required.
+reason: Shell ENTRYPOINT spawns an extra shell process and breaks signal handling.
+references:
+  - https://docs.docker.com/reference/dockerfile/#entrypoint

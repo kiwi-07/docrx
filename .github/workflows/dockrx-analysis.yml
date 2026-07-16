@@ -1,0 +1,36 @@
+# DockRx Dockerfile Analysis
+#
+# Runs DockRx analysis on Dockerfiles whenever a PR is opened or updated,
+# and posts findings as a PR comment (updated in place on subsequent pushes).
+#
+# To use in another repository:
+#   uses: kiwi-07/docrx/.github/actions/analyze@main
+#   with:
+#     install-method: pypi
+
+name: Dockerfile Analysis
+
+on:
+  pull_request:
+    paths:
+      - "**/Dockerfile"
+      - "**/Dockerfile.*"
+      - "**/Containerfile"
+      - ".dockerignore"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: DockRx Analyze
+        uses: ./.github/actions/analyze
+        with:
+          path: "."
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fail-on-severity: "HIGH"
+          comment-on-pr: "true"
+          install-method: "local"

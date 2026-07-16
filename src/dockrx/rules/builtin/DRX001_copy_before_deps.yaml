@@ -1,0 +1,32 @@
+id: DRX001
+title: COPY before dependency install
+severity: HIGH
+category: cache
+tags:
+  - npm
+  - caching
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: COPY
+      args_match: "^(?:--\\S+\\s+)*\\.(?:/\\S*)?(?:\\s|$)"
+      before:
+        instruction: RUN
+        args_match: "(npm|yarn|pnpm)\\s+(ci|install)"
+recommendation: |
+  Copy package manifests before the full source tree so dependency
+  layers stay cacheable.
+
+  Move:
+    COPY package.json package-lock.json ./
+    RUN npm ci
+    COPY . .
+recommendation_short: Copy package.json before COPY .
+estimated_saving:
+  build_time: "30–80%"
+  confidence: heuristic
+reason: Copying the full tree before install invalidates the dependency layer on every source change.
+references:
+  - https://docs.docker.com/build/cache/

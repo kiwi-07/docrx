@@ -1,0 +1,29 @@
+id: DRX007
+title: APT cache not cleaned
+severity: HIGH
+category: size
+tags:
+  - apt
+  - cache
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: RUN
+      args_match: "apt-get\\s+install|apt\\s+install"
+    - not:
+        instruction: RUN
+        args_match: "rm\\s+-rf\\s+/var/lib/apt/lists|/var/lib/apt/lists/\\*"
+recommendation: |
+  In the same RUN as apt-get install, clean the package lists:
+
+    && rm -rf /var/lib/apt/lists/*
+
+  Cleanup in a later RUN cannot shrink the install layer.
+estimated_saving:
+  image_size: "~50–150 MB"
+  confidence: heuristic
+reason: APT package indexes remain in the layer unless removed in the same RUN.
+references:
+  - https://docs.docker.com/build/building/best-practices/#apt-get

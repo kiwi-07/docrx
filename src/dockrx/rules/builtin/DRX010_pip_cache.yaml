@@ -1,0 +1,26 @@
+id: DRX010
+title: Pip cache not cleaned
+severity: MEDIUM
+category: size
+tags:
+  - pip
+  - cache
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: RUN
+      args_match: "pip(\\d*)\\s+install"
+    - not:
+        instruction: RUN
+        args_match: "--no-cache-dir|pip\\s+cache\\s+purge|rm\\s+-rf\\s+.*\\.cache/pip"
+recommendation: |
+  Install with pip --no-cache-dir, or remove the pip cache in the
+  same RUN layer.
+estimated_saving:
+  image_size: "~20–80 MB"
+  confidence: heuristic
+reason: Pip downloads remain in the layer unless --no-cache-dir is used.
+references:
+  - https://pip.pypa.io/en/stable/cli/pip_install/

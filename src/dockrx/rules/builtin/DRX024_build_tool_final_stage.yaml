@@ -1,0 +1,26 @@
+id: DRX024
+title: Build-tool base image in final stage
+severity: HIGH
+category: size
+tags:
+  - multi-stage
+  - maven
+  - gradle
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: FROM
+      stage: final
+      args_match: "(^|/)(maven|gradle)(:|\\s|$)"
+recommendation: |
+  The final stage should run your artifact, not compile it. Use a
+  builder stage with maven/gradle images and copy only the JAR/WAR into
+  a slim JRE or distroless runtime image.
+estimated_saving:
+  image_size: "~200–800 MB"
+  confidence: heuristic
+reason: Build-tool images include JDK, plugins, and caches not needed at runtime.
+references:
+  - https://docs.docker.com/build/building/multi-stage/

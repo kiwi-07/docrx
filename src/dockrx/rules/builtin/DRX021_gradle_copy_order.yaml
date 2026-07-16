@@ -1,0 +1,32 @@
+id: DRX021
+title: COPY before Gradle build
+severity: HIGH
+category: cache
+tags:
+  - gradle
+  - java
+  - caching
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: COPY
+      args_match: "^(?:--\\S+\\s+)*\\.(?:/\\S*)?(?:\\s|$)"
+      before:
+        instruction: RUN
+        args_match: "\\bgradle\\b"
+recommendation: |
+  Copy Gradle wrapper and build files before application sources:
+
+    COPY gradlew settings.gradle build.gradle ./
+    COPY gradle gradle
+    RUN ./gradlew dependencies --no-daemon
+    COPY src src
+    RUN ./gradlew bootJar --no-daemon
+estimated_saving:
+  build_time: "30–80%"
+  confidence: heuristic
+reason: COPY . before Gradle invalidates dependency layers on every code change.
+references:
+  - https://docs.docker.com/build/cache/

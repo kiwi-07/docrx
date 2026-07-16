@@ -1,0 +1,20 @@
+id: DRX008
+title: ADD used instead of COPY
+severity: MEDIUM
+category: best_practices
+tags:
+  - add
+  - copy
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  all:
+    - instruction: ADD
+      args_match: ".*"
+recommendation: |
+  Prefer COPY unless you need ADD's remote URL or auto-extract
+  behavior. COPY is more explicit and harder to misuse.
+reason: ADD has surprising behaviors (tar auto-extract, remote URLs).
+references:
+  - https://docs.docker.com/reference/dockerfile/#add

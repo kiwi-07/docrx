@@ -1,0 +1,27 @@
+id: DRX013
+title: Large full-image base (heuristic)
+severity: MEDIUM
+category: size
+tags:
+  - base-image
+  - slim
+applies_to:
+  - dockerfile
+pack: builtin@0.1
+detect:
+  any:
+    - instruction: FROM
+      args_match: "(^|/)(ubuntu|debian)(:|\\s|$)|(^|/)(python|node|golang):(?![^\\s]*(slim|alpine|distroless|minimal|cloud))"
+      stage: final
+recommendation: |
+  Prefer slim or distroless variants for the final stage when
+  compatible, e.g. python:3.13-slim, node:22-bookworm-slim,
+  gcr.io/distroless/static.
+
+  Verify glibc/musl and package needs before switching.
+estimated_saving:
+  image_size: "~150–600 MB"
+  confidence: heuristic
+reason: Typical full images ship docs, package managers, and unused tooling.
+references:
+  - https://docs.docker.com/build/building/best-practices/#use-multi-stage-builds

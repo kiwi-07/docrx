@@ -320,15 +320,22 @@ def _render_diff(original: str, modified: str, from_path: str, to_path: str) -> 
     return "\n".join(diff)
 
 
-def build_fix_plan(path: Path | str, limit: int = 3) -> FixPlan:
+def build_fix_plan(
+    path: Path | str,
+    limit: int = 3,
+    selected_rule_ids: list[str] | None = None,
+) -> FixPlan:
     ctx, findings = analyze(path)
 
     enriched = enrich_findings(findings)
     supported = {h.rule_id: h for h in FIX_HANDLERS}
+    requested = {rid.upper() for rid in selected_rule_ids} if selected_rule_ids is not None else None
 
     selected: list[str] = []
     for e in enriched:
         rid = e.finding.rule_id
+        if requested is not None and rid not in requested:
+            continue
         if rid == "DRX005":
             # dockerignore is outside Dockerfile, handled separately
             if "DRX005" not in selected:

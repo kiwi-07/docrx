@@ -21,21 +21,25 @@ SEVERITY_PENALTY: dict[Severity, int] = {
 
 
 def score_findings(findings: list[Finding]) -> ScoreReport:
-    remaining = {cat: weight for cat, weight in WEIGHTS.items()}
-
+    # Accumulate the full penalty per category (no per-category flooring here) so
+    # that the overall score reflects every finding. Flooring only at the category
+    # level would silently discard penalties once a small category (e.g.
+    # best_practices, max 10) is exhausted, making fixes appear to change nothing.
+    penalties = {cat: 0 for cat in WEIGHTS}
     for finding in findings:
-        penalty = SEVERITY_PENALTY[finding.severity]
-        cat = finding.category
-        remaining[cat] = max(0, remaining[cat] - penalty)
+        penalties[finding.category] += SEVERITY_PENALTY[finding.severity]
 
     categories = [
         CategoryScore(
             name=cat,
-            score=remaining[cat],
+            score=max(0, weight - penalties[cat]),
             max_points=weight,
             weight=weight,
         )
         for cat, weight in WEIGHTS.items()
     ]
-    overall = sum(remaining.values())
+
+    total_weight = sum(WEIGHTS.values())
+    total_penalty = sum(penalties.values())
+    overall = max(0, total_weight - total_penalty)
     return ScoreReport(overall=overall, categories=categories)

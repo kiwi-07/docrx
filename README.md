@@ -63,12 +63,14 @@ uv run dockrx --version
 
 ### From PyPI
 
-PyPI publish is coming soon for `0.1.0`. Until then, install from source as above.
+`dockrx` is published on [PyPI](https://pypi.org/project/dockrx/):
 
 ```bash
-# after publish:
-# pip install dockrx
-# pipx install dockrx
+pip install dockrx
+# or
+pipx install dockrx
+# or run without installing:
+uvx --from dockrx dockrx --version
 ```
 
 ## Commands
@@ -171,7 +173,6 @@ dockrx compare before/ after/ --json
 
 ### Next
 
-- PyPI publish
 - image inspection / layer-size analysis
 - richer auto-fix coverage
 - CLI helpers to scaffold local rules

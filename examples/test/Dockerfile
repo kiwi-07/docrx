@@ -1,52 +1,39 @@
+# Sample multi-module Java service — intentionally imperfect for DockRx demos/tests.
+# Good Maven cache layering (pom.xml copied before sources), but the runtime
+# stage has several issues DockRx should catch.
+
 # pre-fetch dependencies
 FROM maven:3.9.9-eclipse-temurin-21-jammy AS dependencies
 
 ARG MAVEN_CACHE_ID
 
-WORKDIR /opt/akt
-COPY aether-command-service/pom.xml aether-command-service/pom.xml
-COPY aether-commons/pom.xml aether-commons/pom.xml
-COPY aether-configota-service/pom.xml aether-configota-service/pom.xml
-COPY aether-device-client/pom.xml aether-device-client/pom.xml
-COPY aether-event-service/pom.xml aether-event-service/pom.xml
-COPY aether-firmwareota-service/pom.xml aether-firmwareota-service/pom.xml
-COPY aether-instructionota-service/pom.xml aether-instructionota-service/pom.xml
-COPY aether-media-service/pom.xml aether-media-service/pom.xml
-COPY aether-onboarding-service/pom.xml aether-onboarding-service/pom.xml
-COPY aether-orchestrator/pom.xml aether-orchestrator/pom.xml
-COPY aether-api-service/pom.xml aether-api-service/pom.xml
-COPY aether-api-commons/pom.xml aether-api-commons/pom.xml
-COPY aether-fileuploadota-service/pom.xml aether-fileuploadota-service/pom.xml
-COPY aether-auth-core/pom.xml aether-auth-core/pom.xml
-COPY aether-eventenrichment-service/pom.xml aether-eventenrichment-service/pom.xml
-COPY aether-invalidrequest-service/pom.xml aether-invalidrequest-service/pom.xml
-COPY aether-deviceinfo-service/pom.xml aether-deviceinfo-service/pom.xml
-COPY aether-vimota-service/pom.xml aether-vimota-service/pom.xml
-COPY aether-notification-service/pom.xml aether-notification-service/pom.xml
-COPY aether-eoddrivercoaching-service/pom.xml aether-eoddrivercoaching-service/pom.xml
-COPY aether-rate-limit-core/pom.xml aether-rate-limit-core/pom.xml
+WORKDIR /opt/app
+COPY service-api/pom.xml service-api/pom.xml
+COPY service-core/pom.xml service-core/pom.xml
+COPY service-events/pom.xml service-events/pom.xml
+COPY service-auth/pom.xml service-auth/pom.xml
+COPY service-notifications/pom.xml service-notifications/pom.xml
 COPY pom.xml .
 
-RUN --mount=type=cache,id=maven-cache-${MAVEN_CACHE_ID},target=/root/.m2,sharing=locked mvn -B -e org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline -DexcludeArtifactIds=aether-commons,aether-event-service
+RUN --mount=type=cache,id=maven-cache-${MAVEN_CACHE_ID},target=/root/.m2,sharing=locked mvn -B -e org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline -DexcludeArtifactIds=service-core,service-events
 
 # build the jar
 FROM maven:3.9.9-eclipse-temurin-21-jammy AS builder
 
 ARG MAVEN_CACHE_ID
 
-WORKDIR /opt/akt
-#COPY --from=dependencies /root/.m2 /root/.m2
-COPY --from=dependencies /opt/akt/ /opt/akt
-COPY aether-commons/src /opt/akt/aether-commons/src
-COPY aether-event-service/src /opt/akt/aether-event-service/src
+WORKDIR /opt/app
+COPY --from=dependencies /opt/app/ /opt/app
+COPY service-core/src /opt/app/service-core/src
+COPY service-events/src /opt/app/service-events/src
 
 RUN --mount=type=cache,id=maven-cache-${MAVEN_CACHE_ID},target=/root/.m2,sharing=locked mvn -e clean package -DskipTests
 
 # prepare runtime env
 FROM eclipse-temurin:21-jdk-jammy
-LABEL maintainer="Platform Engineering <platform_engineering@akteena.com>"
-LABEL version="2.22.0-SNAPSHOT"
-LABEL description="Aether Event Service"
+LABEL maintainer="Example Team <maintainer@example.com>"
+LABEL version="1.0.0"
+LABEL description="Example Event Service"
 
 # Install essential networking tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -61,12 +48,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dnsutils \
  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/akt
-COPY --from=builder /opt/akt/aether-event-service/target/aether-event-service-2.22.0-SNAPSHOT.jar /opt/akt/aether-event-service/aether-event-service.jar
+WORKDIR /opt/app
+COPY --from=builder /opt/app/service-events/target/service-events-1.0.0.jar /opt/app/service-events/service-events.jar
 EXPOSE 8081
 
-ENTRYPOINT exec java $JAVA_OPTS -jar /opt/akt/aether-event-service/aether-event-service.jar
-
-
-
-
+ENTRYPOINT exec java $JAVA_OPTS -jar /opt/app/service-events/service-events.jar

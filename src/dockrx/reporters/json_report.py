@@ -57,6 +57,7 @@ def render_json(report: AnalysisReport) -> str:
                 "title": f.title,
                 "short_title": e.presentation.short_title,
                 "recommendation": f.recommendation,
+                "reason": f.reason,
                 "pack": f.pack,
                 "line": f.line,
                 "stage": f.stage,

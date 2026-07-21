@@ -36,6 +36,8 @@ Options:
 | `--score-only` | Print only the overall score (integer) |
 | `--badge` | Print an SVG health badge instead of the full report |
 
+`--json`, `--score-only`, and `--badge` are **mutually exclusive** — passing more than one exits with code `2`.
+
 What it prints (default mode):
 
 - overall health gauge and grade
@@ -46,11 +48,13 @@ What it prints (default mode):
 - category breakdown
 - detailed findings sorted by ROI
 
-Exit behavior:
+Exit behavior (applies to **all** output modes, including `--score-only` and `--badge`):
 
 - exits with code `1` when findings meet `[tool.dockrx] fail-on-severity` (default: `HIGH`)
-- exits with code `2` when the Dockerfile path cannot be resolved
+- exits with code `2` when the Dockerfile path cannot be resolved, is empty, or is not a valid Dockerfile (no `FROM` instruction)
 - exits with code `0` otherwise
+
+When a directory contains more than one Dockerfile, DockRx analyzes the primary one and prints a warning to stderr listing the others.
 
 Size/build estimates in the report are heuristic (not measured from builds).
 
@@ -69,6 +73,11 @@ Options:
 | Flag | Description |
 |------|-------------|
 | `--path`, `-p` | Project path for loading local rule overrides |
+
+Exit behavior:
+
+- exits with code `1` when the rule id is unknown
+- exits with code `0` when the rule is found and explained
 
 ## `dockrx fix`
 
@@ -90,6 +99,8 @@ Options:
 | `--limit` | Max number of fixes to apply (default: config `default-fix-limit` or `3`) |
 | `--yes` | Apply changes without prompting |
 | `--dry-run` | Show preview only; do not write any files |
+
+In a non-interactive environment (no TTY, e.g. CI or a pipe), `fix` requires `--yes` or `--dry-run`; without one it refuses to prompt and exits with code `2`.
 
 Current fix support includes:
 
@@ -161,7 +172,7 @@ Options:
 |------|-------------|
 | `--yes` | Apply all suggestions and write `Dockerfile.fixed` without prompting |
 
-Without `--yes`, for each fixable finding you can apply, skip, or quit, then confirm writing `Dockerfile.fixed`.
+Without `--yes`, for each fixable finding you can apply, skip, or quit, then confirm writing `Dockerfile.fixed`. In a non-interactive environment (no TTY), `suggest` requires `--yes`; without it, it refuses to prompt and exits with code `2`.
 
 ## `dockrx format`
 
@@ -182,6 +193,8 @@ Options:
 | `--check` | Exit with code `1` if formatting is needed (CI-friendly) |
 | `--diff` | Show a unified diff of changes |
 
+`--check`, `--write`, and `--diff` are **mutually exclusive** — passing more than one exits with code `2`. With no mode flag, `format` prints the formatted Dockerfile to stdout.
+
 Prefer `--check` / `--diff` in CI. Use `--write` only when you intend to modify the original file.
 
 ## `dockrx --version`
@@ -191,6 +204,18 @@ Print the installed DockRx version.
 ```bash
 dockrx --version
 ```
+
+## Exit Codes
+
+Exit codes are a stable public contract intended for scripting and CI:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success — no failing findings, or a non-analyze command completed normally |
+| `1` | Analysis threshold reached (`analyze` found issues at/above `fail-on-severity`), formatting needed (`format --check`), or an unknown rule id (`explain`) |
+| `2` | Usage or input error — path not found, empty/invalid Dockerfile (no `FROM`), mutually-exclusive flags combined, or an interactive command run without a TTY and without `--yes`/`--dry-run` |
+
+Per-command specifics are noted in each section above.
 
 ## Configuration
 
@@ -228,3 +253,9 @@ dockrx compare before/ after/ --json
 - category deltas
 - resolved rule IDs
 - newly introduced rule IDs
+
+## Web API
+
+DockRx also exposes an HTTP API (the same engine as the CLI) that powers the live playground at
+[dockrx.vercel.app](https://dockrx.vercel.app). See [`web-api.md`](web-api.md) for endpoints,
+request/response shapes, limits, and the `DOCKRX_CORS_ORIGINS` setting.

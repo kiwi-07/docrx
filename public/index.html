@@ -8,8 +8,8 @@
       name="description"
       content="Paste a Dockerfile. DockRx scores cache, size, and security issues and ranks the fixes."
     />
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5.6.0" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
   </head>
   <body class="min-h-screen">
     <div class="navbar bg-base-200 px-4 lg:px-8">
@@ -24,102 +24,242 @@
       </div>
       <div class="navbar-end gap-1">
         <a class="btn btn-ghost btn-sm" href="https://github.com/kiwi-07/docrx" rel="noopener noreferrer">GitHub</a>
-        <a class="btn btn-ghost btn-sm" href="/api/docs" rel="noopener noreferrer">API</a>
       </div>
     </div>
 
     <main class="mx-auto max-w-6xl px-4 lg:px-8 py-6 lg:py-8">
-      <p class="mb-6 max-w-2xl text-base-content/70">
-        Paste a Dockerfile. Get a health score and ranked fixes for cache, size, and security.
-      </p>
-
-      <section class="grid gap-4 lg:grid-cols-2 lg:items-start" aria-label="Analyze Dockerfile">
-        <div class="card bg-base-200 card-border shadow-sm">
-          <div class="card-body gap-3 p-4 lg:p-5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 class="card-title text-base m-0">Dockerfile</h2>
-              <div class="flex items-center gap-2">
-                <span class="text-xs opacity-60 font-mono" id="line-count">0 lines</span>
-                <div class="join">
-                  <button type="button" class="btn btn-sm join-item" id="btn-sample">Load sample</button>
-                  <button type="button" class="btn btn-sm btn-ghost join-item" id="btn-clear">Clear</button>
-                </div>
-              </div>
-            </div>
-
-            <label class="sr-only" for="dockerfile">Dockerfile contents</label>
-            <textarea
-              id="dockerfile"
-              class="textarea textarea-bordered w-full min-h-72 lg:min-h-[28rem] font-mono text-sm leading-relaxed"
-              spellcheck="false"
-              autocomplete="off"
-              autocapitalize="off"
-              placeholder="FROM python:3.12&#10;WORKDIR /app&#10;COPY . .&#10;RUN pip install -r requirements.txt&#10;CMD [&quot;python&quot;, &quot;main.py&quot;]"
-            ></textarea>
-
-            <div class="card-actions items-center justify-between gap-3">
-              <p class="text-sm opacity-70 m-0" id="status" role="status">Ready.</p>
-              <button type="button" class="btn btn-primary" id="btn-analyze">
-                <span class="loading loading-spinner loading-sm hidden" id="btn-loading" aria-hidden="true"></span>
-                <span id="btn-label">Analyze</span>
-                <span id="btn-keys" class="hidden sm:inline-flex gap-1 ml-1 opacity-80">
-                  <kbd class="kbd kbd-xs">⌘</kbd>
-                  <kbd class="kbd kbd-xs">Enter</kbd>
-                </span>
-              </button>
-            </div>
-          </div>
+      <div class="mb-5 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.22em] opacity-55">Browser workbench</p>
+          <p class="mt-1 max-w-2xl text-base-content/70">
+            Check, improve, compare, and export a Dockerfile without uploading a project.
+          </p>
         </div>
+        <div class="alert alert-info alert-soft max-w-xl py-2 text-sm">
+          <span>
+            Need project context, CI gates, plugins, or direct file writes?
+            <a class="link font-semibold" href="https://github.com/kiwi-07/docrx#install">Use the DockRx CLI</a>
+            for the complete toolset.
+          </span>
+        </div>
+      </div>
 
-        <div class="card bg-base-200 card-border shadow-sm hidden lg:sticky lg:top-4 max-h-[calc(100vh-2rem)] lg:overflow-auto" id="report">
-          <div class="card-body gap-4 p-4 lg:p-5">
-            <div class="stats stats-vertical sm:stats-horizontal bg-base-100 w-full shadow-sm">
-              <div class="stat place-items-center sm:place-items-start">
-                <div class="stat-figure text-primary">
-                  <div
-                    class="radial-progress text-primary"
-                    id="score-radial"
-                    style="--value: 0; --size: 4.5rem; --thickness: 6px"
-                    aria-valuenow="0"
-                    role="progressbar"
-                  >
-                    <span id="score-num">0</span>
+      <div role="tablist" class="tabs tabs-box mb-4 w-full overflow-x-auto" aria-label="DockRx tools">
+        <button role="tab" class="tab tab-active" data-tool="check">Check</button>
+        <button role="tab" class="tab" data-tool="fix">Fix &amp; suggest</button>
+        <button role="tab" class="tab" data-tool="format">Format</button>
+        <button role="tab" class="tab" data-tool="compare">Compare</button>
+        <button role="tab" class="tab" data-tool="badge">Badge</button>
+      </div>
+
+      <section data-pane="check" aria-label="Check Dockerfile">
+        <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+          <div class="card bg-base-200 card-border shadow-sm">
+            <div class="card-body gap-3 p-4 lg:p-5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="card-title text-base m-0">Dockerfile</h2>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs opacity-60 font-mono" id="line-count">0 lines</span>
+                  <div class="join">
+                    <button type="button" class="btn btn-sm join-item" id="btn-sample">Load sample</button>
+                    <button type="button" class="btn btn-sm btn-ghost join-item" id="btn-clear">Clear</button>
                   </div>
                 </div>
-                <div class="stat-title">Health</div>
-                <div class="stat-value text-2xl" id="score-label">—</div>
-                <div class="stat-desc" id="score-sub"></div>
+              </div>
+
+              <label class="sr-only" for="dockerfile">Dockerfile contents</label>
+              <textarea
+                id="dockerfile"
+                class="textarea textarea-bordered w-full min-h-72 lg:min-h-[28rem] font-mono text-sm leading-relaxed"
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+                placeholder="FROM python:3.12&#10;WORKDIR /app&#10;COPY . .&#10;RUN pip install -r requirements.txt&#10;CMD [&quot;python&quot;, &quot;main.py&quot;]"
+              ></textarea>
+
+              <label class="label cursor-pointer justify-start gap-2 py-0" for="opt-dockerignore">
+                <input type="checkbox" id="opt-dockerignore" class="toggle toggle-sm" />
+                <span class="text-sm">Project has a <code class="font-mono">.dockerignore</code></span>
+              </label>
+
+              <div class="card-actions items-center justify-between gap-3">
+                <p class="text-sm opacity-70 m-0" id="status" role="status">Ready.</p>
+                <button type="button" class="btn btn-primary" id="btn-analyze">
+                  <span class="loading loading-spinner loading-sm hidden" id="btn-loading" aria-hidden="true"></span>
+                  <span id="btn-label">Analyze</span>
+                  <span id="btn-keys" class="hidden sm:inline-flex gap-1 ml-1 opacity-80">
+                    <kbd class="kbd kbd-xs">⌘</kbd>
+                    <kbd class="kbd kbd-xs">Enter</kbd>
+                  </span>
+                </button>
               </div>
             </div>
+          </div>
 
-            <div class="flex flex-col gap-2" id="categories"></div>
+          <div class="card bg-base-200 card-border shadow-sm hidden lg:sticky lg:top-4 max-h-[calc(100vh-2rem)] lg:overflow-auto" id="report">
+            <div class="card-body gap-4 p-4 lg:p-5">
+              <div class="stats stats-vertical sm:stats-horizontal bg-base-100 w-full shadow-sm">
+                <div class="stat place-items-center sm:place-items-start">
+                  <div class="stat-figure text-primary">
+                    <div
+                      class="radial-progress text-primary"
+                      id="score-radial"
+                      style="--value: 0; --size: 4.5rem; --thickness: 6px"
+                      aria-valuenow="0"
+                      role="progressbar"
+                    >
+                      <span id="score-num">0</span>
+                    </div>
+                  </div>
+                  <div class="stat-title">Health</div>
+                  <div class="stat-value text-2xl" id="score-label">—</div>
+                  <div class="stat-desc" id="score-sub"></div>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2" id="categories"></div>
+              <div class="flex flex-wrap gap-2" id="diag"></div>
+              <div>
+                <div class="text-xs uppercase tracking-widest opacity-60 mb-2">Instruction map</div>
+                <div class="flex flex-wrap gap-1" id="layers" aria-hidden="true"></div>
+              </div>
+              <div class="divider my-0">Prescription</div>
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="font-semibold m-0">Findings</h3>
+                <span class="text-sm opacity-60" id="findings-count"></span>
+              </div>
+              <ul class="list bg-base-100 rounded-box" id="findings"></ul>
+            </div>
+          </div>
 
-            <div class="flex flex-wrap gap-2" id="diag"></div>
-
+          <div class="alert alert-soft shadow-sm" id="empty">
             <div>
-              <div class="text-xs uppercase tracking-widest opacity-60 mb-2">Instruction map</div>
-              <div class="flex flex-wrap gap-1" id="layers" aria-hidden="true"></div>
+              <h3 class="font-bold">No report yet</h3>
+              <div class="text-sm opacity-80">
+                Run Analyze on the sample, or paste your own Dockerfile. Results show up here as a ranked
+                prescription.
+              </div>
+              <div class="mt-3">
+                <button type="button" class="btn btn-sm" id="btn-empty-analyze">Analyze sample</button>
+              </div>
             </div>
-
-            <div class="divider my-0">Prescription</div>
-
-            <div class="flex items-center justify-between gap-2">
-              <h3 class="font-semibold m-0">Findings</h3>
-              <span class="text-sm opacity-60" id="findings-count"></span>
-            </div>
-            <ul class="list bg-base-100 rounded-box" id="findings"></ul>
           </div>
         </div>
+      </section>
 
-        <div class="alert alert-soft shadow-sm" id="empty">
-          <div>
-            <h3 class="font-bold">No report yet</h3>
-            <div class="text-sm opacity-80">
-              Run Analyze on the sample, or paste your own Dockerfile. Results show up here as a ranked
-              prescription.
+      <section data-pane="fix" class="hidden" aria-label="Fix Dockerfile">
+        <div class="grid gap-4 lg:grid-cols-[22rem_1fr]">
+          <div class="card bg-base-200 card-border">
+            <div class="card-body">
+              <h2 class="card-title">Guided fixes</h2>
+              <p class="text-sm opacity-70">Choose deterministic changes. The original is never overwritten.</p>
+              <button type="button" class="btn" id="btn-fix-preview">Find available fixes</button>
+              <div id="fix-options" class="flex flex-col gap-2"></div>
+              <button type="button" class="btn btn-primary hidden" id="btn-fix-apply">Update preview</button>
+              <p class="text-sm" id="fix-status" role="status"></p>
             </div>
-            <div class="mt-3">
-              <button type="button" class="btn btn-sm" id="btn-empty-analyze">Analyze sample</button>
+          </div>
+          <div class="card bg-base-200 card-border">
+            <div class="card-body">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="card-title">Dockerfile.fixed</h2>
+                <button type="button" class="btn btn-sm hidden" id="btn-fix-download">Download</button>
+              </div>
+              <pre class="mockup-code min-h-72 overflow-auto whitespace-pre-wrap text-xs" id="fix-preview"><code>Run “Find available fixes” to build a safe preview.</code></pre>
+              <div id="dockerignore-preview" class="hidden">
+                <h3 class="mt-3 font-semibold">Generated .dockerignore</h3>
+                <pre class="mockup-code mt-2 overflow-auto whitespace-pre-wrap text-xs"><code id="dockerignore-code"></code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-pane="format" class="hidden" aria-label="Format Dockerfile">
+        <div class="card bg-base-200 card-border">
+          <div class="card-body">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="card-title">Formatting preview</h2>
+                <p class="text-sm opacity-70">Normalize instruction casing, whitespace, continuations, and stage spacing.</p>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn" id="btn-format">Format current Dockerfile</button>
+                <button type="button" class="btn btn-primary hidden" id="btn-format-download">Download</button>
+              </div>
+            </div>
+            <p class="text-sm" id="format-status" role="status"></p>
+            <pre class="mockup-code min-h-80 overflow-auto whitespace-pre-wrap text-xs" id="format-preview"><code>Formatted output will appear here.</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section data-pane="compare" class="hidden" aria-label="Compare Dockerfiles">
+        <div class="grid gap-4 lg:grid-cols-2">
+          <div class="card bg-base-200 card-border">
+            <div class="card-body">
+              <h2 class="card-title">Before</h2>
+              <p class="text-sm opacity-70">Uses the Dockerfile from the Check tab.</p>
+              <pre class="mockup-code max-h-80 overflow-auto whitespace-pre-wrap text-xs"><code id="compare-before"></code></pre>
+            </div>
+          </div>
+          <div class="card bg-base-200 card-border">
+            <div class="card-body">
+              <h2 class="card-title">After</h2>
+              <textarea id="compare-after" class="textarea textarea-bordered min-h-80 w-full font-mono text-sm" placeholder="Paste the improved Dockerfile…"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button type="button" class="btn btn-primary" id="btn-compare">Compare health</button>
+        </div>
+        <div class="mt-4 card bg-base-200 card-border hidden" id="compare-result">
+          <div class="card-body">
+            <h2 class="card-title" id="compare-headline"></h2>
+            <div class="stats stats-vertical sm:stats-horizontal bg-base-100">
+              <div class="stat"><div class="stat-title">Before</div><div class="stat-value" id="compare-score-before"></div></div>
+              <div class="stat"><div class="stat-title">After</div><div class="stat-value" id="compare-score-after"></div></div>
+              <div class="stat"><div class="stat-title">Change</div><div class="stat-value" id="compare-delta"></div></div>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div><h3 class="font-semibold text-success">Resolved</h3><div id="compare-resolved" class="mt-2 flex flex-wrap gap-1"></div></div>
+              <div><h3 class="font-semibold text-warning">Introduced</h3><div id="compare-new" class="mt-2 flex flex-wrap gap-1"></div></div>
+            </div>
+          </div>
+        </div>
+        <p class="mt-3 text-sm text-error" id="compare-status" role="status"></p>
+      </section>
+
+      <section data-pane="badge" class="hidden" aria-label="Generate badge">
+        <div class="grid gap-4 lg:grid-cols-[22rem_1fr]">
+          <div class="card bg-base-200 card-border">
+            <div class="card-body">
+              <h2 class="card-title">Health badge</h2>
+              <label class="fieldset">
+                <span class="fieldset-legend">Label</span>
+                <input class="input w-full" id="badge-label" maxlength="40" value="DockRx" />
+              </label>
+              <label class="fieldset">
+                <span class="fieldset-legend">Style</span>
+                <select class="select w-full" id="badge-style">
+                  <option value="flat">Flat</option>
+                  <option value="flat-square">Flat square</option>
+                  <option value="plastic">Plastic</option>
+                  <option value="for-the-badge">For the badge</option>
+                </select>
+              </label>
+              <button type="button" class="btn btn-primary" id="btn-badge">Generate badge</button>
+              <p class="text-sm" id="badge-status" role="status"></p>
+            </div>
+          </div>
+          <div class="card bg-base-200 card-border">
+            <div class="card-body">
+              <h2 class="card-title">Preview &amp; export</h2>
+              <div class="min-h-20 rounded-box bg-base-100 p-5" id="badge-preview"></div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm hidden" id="btn-badge-download">Download SVG</button>
+                <button type="button" class="btn btn-sm hidden" id="btn-badge-markdown">Copy Markdown</button>
+                <button type="button" class="btn btn-sm hidden" id="btn-badge-url">Copy URL</button>
+              </div>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import difflib
 import logging
+import sys
 from pathlib import Path
 
 import typer
@@ -26,6 +27,14 @@ from dockrx.reporters import (
 from dockrx.scoring import score_findings
 
 logger = logging.getLogger("dockrx.cli")
+
+# Candidate Dockerfile names, in resolution order, when a directory is given.
+_DOCKERFILE_NAMES = ("Dockerfile", "dockerfile", "Containerfile")
+
+
+class InvalidDockerfileError(Exception):
+    """Raised when a file exists but does not look like a Dockerfile."""
+
 
 _SEVERITY_RANK: dict[str, int] = {
     "HIGH": 0,
@@ -71,6 +80,7 @@ app = typer.Typer(
     invoke_without_command=False,
 )
 console = Console()
+err_console = Console(stderr=True)
 
 
 def _version_callback(value: bool) -> None:
@@ -84,6 +94,11 @@ def _version_callback(value: bool) -> None:
 def _build_report(path: Path) -> AnalysisReport:
     logger.debug("Building report for %s", path)
     ctx, findings = analyze(path)
+    if not ctx.graph.has_from:
+        raise InvalidDockerfileError(
+            f"{ctx.dockerfile_path} does not look like a Dockerfile "
+            "(no FROM instruction found)."
+        )
     return AnalysisReport(
         path=str(ctx.dockerfile_path),
         score=score_findings(findings),
@@ -91,6 +106,41 @@ def _build_report(path: Path) -> AnalysisReport:
         instruction_count=len(ctx.graph.instructions),
         stage_count=len(ctx.graph.stages),
     )
+
+
+def _resolve_error_exit(exc: Exception) -> None:
+    """Print a resolution/validation error and exit with code 2."""
+    console.print(f"[red]{exc}[/red]")
+    raise typer.Exit(code=2) from exc
+
+
+def _warn_other_dockerfiles(path: Path, analyzed: Path) -> None:
+    """When a directory holds more than one Dockerfile, note which one was used."""
+    if not path.is_dir():
+        return
+    others = sorted(
+        p.name
+        for p in path.iterdir()
+        if p.is_file()
+        and p.resolve() != analyzed.resolve()
+        and (p.name in _DOCKERFILE_NAMES or p.suffix.lower() == ".dockerfile" or p.name.startswith("Dockerfile."))
+    )
+    if others:
+        err_console.print(
+            f"[yellow]Note:[/yellow] analyzed [bold]{analyzed.name}[/bold]; "
+            f"ignored other Dockerfile(s): {', '.join(others)}",
+            style="dim",
+        )
+
+
+def _require_interactive(action: str) -> None:
+    """Abort with a clear message when a prompt is needed but stdin is not a TTY."""
+    if not sys.stdin.isatty():
+        console.print(
+            f"[red]Refusing to prompt for {action} in a non-interactive shell. "
+            "Re-run with --yes to proceed without prompting.[/red]"
+        )
+        raise typer.Exit(code=2)
 
 
 @app.callback()
@@ -132,11 +182,23 @@ def analyze_cmd(
     ),
 ) -> None:
     """Analyze a Dockerfile and print recommendations."""
+    selected = [name for name, on in (("--json", json_output), ("--score-only", score_only), ("--badge", badge)) if on]
+    if len(selected) > 1:
+        console.print(f"[red]{' and '.join(selected)} cannot be combined; pick one output mode.[/red]")
+        raise typer.Exit(code=2)
+
     try:
         report = _build_report(path)
-    except FileNotFoundError as exc:
-        console.print(f"[red]{exc}[/red]")
-        raise typer.Exit(code=2) from exc
+    except (FileNotFoundError, InvalidDockerfileError) as exc:
+        _resolve_error_exit(exc)
+        return  # unreachable; keeps type-checkers happy
+
+    _warn_other_dockerfiles(path, Path(report.path))
+
+    # Compute the CI exit code first so every output mode honors fail-on-severity.
+    cfg = load_config(_config_root_for(path))
+    threshold = cfg.get("fail-on-severity", "HIGH")
+    exit_code = 1 if _should_fail_on_severity(report.findings, threshold) else 0
 
     if badge:
         badge_svg = render_badge(
@@ -145,21 +207,15 @@ def analyze_cmd(
             findings_count=len(report.findings),
         )
         typer.echo(badge_svg)
-        raise typer.Exit(code=0)
-
-    if score_only:
+    elif score_only:
         typer.echo(report.score.overall)
-        raise typer.Exit(code=0)
-
-    if json_output:
+    elif json_output:
         typer.echo(render_json(report))
     else:
         render_rich(report, console=console)
 
-    cfg = load_config(_config_root_for(path))
-    threshold = cfg.get("fail-on-severity", "HIGH")
-    if _should_fail_on_severity(report.findings, threshold):
-        raise typer.Exit(code=1)
+    if exit_code:
+        raise typer.Exit(code=exit_code)
 
 
 @app.command("explain")
@@ -178,7 +234,7 @@ def explain_cmd(
     project_root = path if path.is_dir() else path.parent
     if not render_explain(rule_id, console=console, project_root=project_root):
         console.print(f"[red]Unknown rule: {rule_id}[/red]")
-        raise typer.Exit(code=2)
+        raise typer.Exit(code=1)
 
 
 @app.command("compare")
@@ -207,9 +263,9 @@ def compare_cmd(
     try:
         before_report = _build_report(before)
         after_report = _build_report(after)
-    except FileNotFoundError as exc:
-        console.print(f"[red]{exc}[/red]")
-        raise typer.Exit(code=2) from exc
+    except (FileNotFoundError, InvalidDockerfileError) as exc:
+        _resolve_error_exit(exc)
+        return  # unreachable; keeps type-checkers happy
 
     if json_output:
         typer.echo(render_compare_json(before_report, after_report))
@@ -281,6 +337,7 @@ def fix_cmd(
         console.print(f"[green]Wrote {plan.fixed_path}[/green]")
         raise typer.Exit(code=0)
 
+    _require_interactive("fix")
     prompt = f"Apply {len(applied)} changes? [y/N] "
     ans = input(prompt).strip().lower()
     if ans not in {"y", "yes"}:
@@ -339,9 +396,9 @@ def badge_cmd(
     """
     try:
         report = _build_report(path)
-    except FileNotFoundError as exc:
-        console.print(f"[red]{exc}[/red]")
-        raise typer.Exit(code=2) from exc
+    except (FileNotFoundError, InvalidDockerfileError) as exc:
+        _resolve_error_exit(exc)
+        return  # unreachable; keeps type-checkers happy
 
     score = report.score.overall
     findings_count = len(report.findings)
@@ -411,6 +468,9 @@ def suggest_cmd(
     if not fixable:
         console.print("[yellow]No auto-fixable issues found (try 'dockrx analyze' for recommendations).[/yellow]")
         raise typer.Exit(code=0)
+
+    if not yes:
+        _require_interactive("suggest")
 
     console.print(f"[bold]DockRx Suggest[/bold] — {len(fixable)} fixable issues found")
     console.print()
@@ -562,9 +622,14 @@ def format_cmd(
     """
     from dockrx.formatter import format_dockerfile_diff, format_dockerfile_file, is_formatted
 
+    selected = [name for name, on in (("--check", check), ("--write", write), ("--diff", diff)) if on]
+    if len(selected) > 1:
+        console.print(f"[red]{' and '.join(selected)} cannot be combined; pick one mode.[/red]")
+        raise typer.Exit(code=2)
+
     dockerfile = path if path.is_file() else (path / "Dockerfile")
     if not dockerfile.is_file():
-        candidates = [path / n for n in ("Dockerfile", "dockerfile", "Containerfile")]
+        candidates = [path / n for n in _DOCKERFILE_NAMES]
         dockerfile = next((c for c in candidates if c.is_file()), None)
         if dockerfile is None:
             console.print("[red]Dockerfile not found[/red]")

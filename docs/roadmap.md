@@ -9,10 +9,11 @@
 - Before/after comparisons
 - GitHub Action with PR commenting
 - `badge` and `format` CLI commands
+- Published on PyPI (`pip install dockrx`)
+- Live web playground + API
 
 ## Next
 
-- PyPI publish
 - Image inspection / layer-size analysis
 - More auto-fix coverage
 - Better score prediction after fixes

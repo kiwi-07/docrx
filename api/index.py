@@ -44,7 +44,7 @@ _enable_docs = os.getenv("DOCKRX_ENABLE_DOCS", "1").lower() not in {"0", "false"
 
 app = FastAPI(
     title="DockRx",
-    version="0.1.0",
+    version="0.1.1",
     docs_url="/api/docs" if _enable_docs else None,
     redoc_url=None,
     openapi_url="/api/openapi.json" if _enable_docs else None,
@@ -185,7 +185,7 @@ def script() -> Response:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "service": "dockrx", "version": "0.1.0"}
+    return {"status": "ok", "service": "dockrx", "version": "0.1.1"}
 
 
 @app.post("/api/analyze")

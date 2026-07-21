@@ -5,6 +5,13 @@ All notable changes to DockRx are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-07-21
+
+### Changed
+- Update package author metadata to Ankit Patil (`ankitiips@gmail.com`)
+- Sanitize the bundled Java/Maven example and regenerate the README CLI demo
+- Refresh installation and release documentation now that DockRx is available on PyPI
+
 ## [0.1.0] — 2026-07-21
 
 First public release, published to [PyPI](https://pypi.org/project/dockrx/).

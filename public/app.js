@@ -41,44 +41,7 @@ const el = {
   findings: document.getElementById("findings"),
   findingsCount: document.getElementById("findings-count"),
   btnKeys: document.getElementById("btn-keys"),
-  tabs: [...document.querySelectorAll("[data-tool]")],
-  panes: [...document.querySelectorAll("[data-pane]")],
-  fixPreviewButton: document.getElementById("btn-fix-preview"),
-  fixApplyButton: document.getElementById("btn-fix-apply"),
-  fixDownloadButton: document.getElementById("btn-fix-download"),
-  fixOptions: document.getElementById("fix-options"),
-  fixPreview: document.getElementById("fix-preview"),
-  fixStatus: document.getElementById("fix-status"),
-  dockerignorePreview: document.getElementById("dockerignore-preview"),
-  dockerignoreCode: document.getElementById("dockerignore-code"),
-  formatButton: document.getElementById("btn-format"),
-  formatDownloadButton: document.getElementById("btn-format-download"),
-  formatPreview: document.getElementById("format-preview"),
-  formatStatus: document.getElementById("format-status"),
-  compareBefore: document.getElementById("compare-before"),
-  compareAfter: document.getElementById("compare-after"),
-  compareButton: document.getElementById("btn-compare"),
-  compareResult: document.getElementById("compare-result"),
-  compareHeadline: document.getElementById("compare-headline"),
-  compareScoreBefore: document.getElementById("compare-score-before"),
-  compareScoreAfter: document.getElementById("compare-score-after"),
-  compareDelta: document.getElementById("compare-delta"),
-  compareResolved: document.getElementById("compare-resolved"),
-  compareNew: document.getElementById("compare-new"),
-  compareStatus: document.getElementById("compare-status"),
-  badgeButton: document.getElementById("btn-badge"),
-  badgeLabel: document.getElementById("badge-label"),
-  badgeStyle: document.getElementById("badge-style"),
-  badgeStatus: document.getElementById("badge-status"),
-  badgePreview: document.getElementById("badge-preview"),
-  badgeDownloadButton: document.getElementById("btn-badge-download"),
-  badgeMarkdownButton: document.getElementById("btn-badge-markdown"),
-  badgeUrlButton: document.getElementById("btn-badge-url"),
 };
-
-let fixedDockerfile = "";
-let formattedDockerfile = "";
-let badgeData = null;
 
 function isMac() {
   return /Mac|iPhone|iPad/.test(navigator.platform) || navigator.userAgent.includes("Mac");
@@ -418,200 +381,6 @@ function extractError(payload, res) {
   return res?.statusText || "Request failed";
 }
 
-function currentPayload() {
-  return {
-    dockerfile: el.dockerfile.value,
-    filename: "Dockerfile",
-    has_dockerignore: el.dockerignore?.checked ?? false,
-  };
-}
-
-async function requestJson(path, payload) {
-  if (!payload?.dockerfile?.trim() && path !== "/api/compare") {
-    throw new Error("Paste a Dockerfile in the Check tab first.");
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
-  try {
-    const res = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(extractError(data, res));
-    return data;
-  } catch (err) {
-    if (err?.name === "AbortError") throw new Error("Request timed out. Try a smaller Dockerfile.");
-    throw err;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function downloadText(filename, text, type = "text/plain;charset=utf-8") {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-function status(element, message, tone = "") {
-  element.textContent = message;
-  element.className = "text-sm";
-  if (tone === "error") element.classList.add("text-error");
-  else if (tone === "ok") element.classList.add("text-success");
-  else element.classList.add("opacity-70");
-}
-
-function switchTool(name) {
-  el.tabs.forEach((tab) => {
-    tab.classList.toggle("tab-active", tab.dataset.tool === name);
-    tab.setAttribute("aria-selected", tab.dataset.tool === name ? "true" : "false");
-  });
-  el.panes.forEach((pane) => pane.classList.toggle("hidden", pane.dataset.pane !== name));
-  if (name === "compare") el.compareBefore.textContent = el.dockerfile.value;
-}
-
-function renderFixOptions(fixes, selectedIds) {
-  el.fixOptions.replaceChildren();
-  for (const fix of fixes) {
-    const label = document.createElement("label");
-    label.className = "label cursor-pointer justify-start gap-3 rounded-box bg-base-100 px-3 py-2";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "checkbox checkbox-sm";
-    checkbox.value = fix.id;
-    checkbox.checked = selectedIds.includes(fix.id);
-    const copy = document.createElement("span");
-    copy.className = "min-w-0";
-    const title = document.createElement("span");
-    title.className = "block text-sm font-medium";
-    title.textContent = fix.title;
-    const meta = document.createElement("span");
-    meta.className = "block text-xs opacity-60 font-mono";
-    meta.textContent = `${fix.id} · ${fix.severity}`;
-    copy.append(title, meta);
-    label.append(checkbox, copy);
-    el.fixOptions.append(label);
-  }
-}
-
-async function buildFixPreview(ruleIds = null) {
-  status(el.fixStatus, "Building a deterministic preview…");
-  el.fixPreviewButton.disabled = true;
-  el.fixApplyButton.disabled = true;
-  try {
-    const payload = currentPayload();
-    if (ruleIds !== null) payload.rule_ids = ruleIds;
-    const data = await requestJson("/api/fix", payload);
-    renderFixOptions(data.available_fixes || [], data.applied_rule_ids || []);
-    fixedDockerfile = data.dockerfile || el.dockerfile.value;
-    el.fixPreview.querySelector("code").textContent = fixedDockerfile;
-    el.compareAfter.value = fixedDockerfile;
-    el.fixApplyButton.classList.toggle("hidden", !(data.available_fixes || []).length);
-    el.fixDownloadButton.classList.remove("hidden");
-    el.dockerignorePreview.classList.toggle("hidden", !data.dockerignore_added);
-    el.dockerignoreCode.textContent = data.dockerignore || "";
-    const count = (data.applied_rule_ids || []).length;
-    status(
-      el.fixStatus,
-      count ? `${count} selected fix${count === 1 ? "" : "es"} applied to the preview.` : "No supported fixes selected.",
-      "ok",
-    );
-  } catch (err) {
-    status(el.fixStatus, err.message || "Fix preview failed.", "error");
-  } finally {
-    el.fixPreviewButton.disabled = false;
-    el.fixApplyButton.disabled = false;
-  }
-}
-
-async function formatCurrent() {
-  status(el.formatStatus, "Formatting…");
-  el.formatButton.disabled = true;
-  try {
-    const data = await requestJson("/api/format", currentPayload());
-    formattedDockerfile = data.dockerfile;
-    el.formatPreview.querySelector("code").textContent = formattedDockerfile;
-    el.compareAfter.value = formattedDockerfile;
-    el.formatDownloadButton.classList.remove("hidden");
-    status(el.formatStatus, data.changed ? "Formatting changes are ready to download." : "Already formatted.", "ok");
-  } catch (err) {
-    status(el.formatStatus, err.message || "Formatting failed.", "error");
-  } finally {
-    el.formatButton.disabled = false;
-  }
-}
-
-function renderRuleBadges(container, ruleIds, emptyText) {
-  container.replaceChildren();
-  if (!ruleIds.length) {
-    const text = document.createElement("span");
-    text.className = "text-sm opacity-60";
-    text.textContent = emptyText;
-    container.append(text);
-    return;
-  }
-  for (const id of ruleIds) {
-    const badge = document.createElement("span");
-    badge.className = "badge badge-ghost font-mono";
-    badge.textContent = id;
-    container.append(badge);
-  }
-}
-
-async function compareCurrent() {
-  status(el.compareStatus, "");
-  el.compareButton.disabled = true;
-  try {
-    const data = await requestJson("/api/compare", {
-      before: el.dockerfile.value,
-      after: el.compareAfter.value,
-      before_has_dockerignore: el.dockerignore?.checked ?? false,
-      after_has_dockerignore: el.dockerignore?.checked ?? false,
-    });
-    const delta = data.delta.score;
-    el.compareScoreBefore.textContent = data.before.score;
-    el.compareScoreAfter.textContent = data.after.score;
-    el.compareDelta.textContent = `${delta >= 0 ? "+" : ""}${delta}`;
-    el.compareDelta.className = `stat-value ${delta >= 0 ? "text-success" : "text-error"}`;
-    el.compareHeadline.textContent =
-      delta > 0 ? "The updated Dockerfile is healthier." : delta < 0 ? "The updated Dockerfile regressed." : "Health is unchanged.";
-    renderRuleBadges(el.compareResolved, data.delta.resolved_rule_ids || [], "No findings resolved.");
-    renderRuleBadges(el.compareNew, data.delta.new_rule_ids || [], "No new findings.");
-    el.compareResult.classList.remove("hidden");
-  } catch (err) {
-    status(el.compareStatus, err.message || "Comparison failed.", "error");
-  } finally {
-    el.compareButton.disabled = false;
-  }
-}
-
-async function generateBadge() {
-  status(el.badgeStatus, "Generating…");
-  el.badgeButton.disabled = true;
-  try {
-    badgeData = await requestJson("/api/badge", {
-      ...currentPayload(),
-      label: el.badgeLabel.value.trim() || "DockRx",
-      style: el.badgeStyle.value,
-    });
-    el.badgePreview.innerHTML = badgeData.svg;
-    el.badgeDownloadButton.classList.remove("hidden");
-    el.badgeMarkdownButton.classList.remove("hidden");
-    el.badgeUrlButton.classList.remove("hidden");
-    status(el.badgeStatus, `Badge generated from health score ${badgeData.score}.`, "ok");
-  } catch (err) {
-    status(el.badgeStatus, err.message || "Badge generation failed.", "error");
-  } finally {
-    el.badgeButton.disabled = false;
-  }
-}
-
 async function analyze() {
   const dockerfile = el.dockerfile.value;
   if (!dockerfile.trim()) {
@@ -673,30 +442,10 @@ function loadSample() {
 }
 
 el.analyze.addEventListener("click", analyze);
-el.tabs.forEach((tab) => tab.addEventListener("click", () => switchTool(tab.dataset.tool)));
 el.dockerignore?.addEventListener("change", () => {
   if (!el.report.classList.contains("hidden") && el.dockerfile.value.trim()) {
     analyze();
   }
-});
-el.fixPreviewButton.addEventListener("click", () => buildFixPreview());
-el.fixApplyButton.addEventListener("click", () => {
-  const selected = [...el.fixOptions.querySelectorAll('input[type="checkbox"]:checked')].map((input) => input.value);
-  buildFixPreview(selected);
-});
-el.fixDownloadButton.addEventListener("click", () => downloadText("Dockerfile.fixed", fixedDockerfile));
-el.formatButton.addEventListener("click", formatCurrent);
-el.formatDownloadButton.addEventListener("click", () => downloadText("Dockerfile.formatted", formattedDockerfile));
-el.compareButton.addEventListener("click", compareCurrent);
-el.badgeButton.addEventListener("click", generateBadge);
-el.badgeDownloadButton.addEventListener("click", () => {
-  if (badgeData) downloadText("dockrx-badge.svg", badgeData.svg, "image/svg+xml;charset=utf-8");
-});
-el.badgeMarkdownButton.addEventListener("click", (event) => {
-  if (badgeData) copyText(event.currentTarget, badgeData.markdown);
-});
-el.badgeUrlButton.addEventListener("click", (event) => {
-  if (badgeData) copyText(event.currentTarget, badgeData.url);
 });
 el.sample.addEventListener("click", loadSample);
 el.emptyAnalyze.addEventListener("click", () => {
@@ -727,5 +476,4 @@ if (!isMac() && el.btnKeys) {
 if (!el.dockerfile.value.trim()) {
   el.dockerfile.value = SAMPLE;
 }
-switchTool("check");
 updateLineCount();

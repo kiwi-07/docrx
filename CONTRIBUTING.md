@@ -5,9 +5,9 @@ Thank you for considering contributing to DockRx!
 ## Development Setup
 
 ```bash
-# Clone the repository
+# Clone the repository (the repo is named `docrx`; the CLI/package is `dockrx`)
 git clone https://github.com/kiwi-07/docrx.git
-cd dockrx
+cd docrx
 
 # Sync dependencies
 uv sync --group dev

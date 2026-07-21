@@ -38,6 +38,11 @@ class DockerfileGraph:
     def final_stage(self) -> str | None:
         return self.stages[-1] if self.stages else None
 
+    @property
+    def has_from(self) -> bool:
+        """A parseable Dockerfile must declare at least one base image."""
+        return any(i.instruction == "FROM" for i in self.instructions)
+
     def by_instruction(self, name: str) -> list[Instruction]:
         upper = name.upper()
         return [i for i in self.instructions if i.instruction == upper]

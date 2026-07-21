@@ -20,6 +20,7 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
+    "fastapi>=0.115.0",
     "pydantic>=2.13.4",
     "pyyaml>=6.0.3",
     "rich>=15.0.0",
@@ -44,6 +45,8 @@ dev = [
     "ruff>=0.11.5",
     "pyright>=1.1.397",
     "pre-commit>=4.2.0",
+    "httpx2>=0.29.0",
+    "uvicorn>=0.30.0",
 ]
 
 [tool.pytest.ini_options]
@@ -102,6 +105,12 @@ reportUnknownParameterType = false
 reportUnknownArgumentType = false
 include = ["src", "tests"]
 exclude = ["**/__pycache__", "**/.eggs"]
+
+[tool.vercel]
+entrypoint = "api.index:app"
+
+[tool.vercel.scripts]
+build = "mkdir -p api/static && cp public/index.html public/app.js api/static/"
 
 [tool.uv.build-backend]
 module-name = "dockrx"

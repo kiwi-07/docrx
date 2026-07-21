@@ -13,6 +13,8 @@ DockRx is built to answer one question well:
 
 Instead of stopping at lint-style warnings, DockRx explains impact, prioritizes quick wins, shows copy-paste fixes, and helps you compare before/after improvements.
 
+**Try it now — no install required:** [dockrx.vercel.app](https://dockrx.vercel.app) is a live web playground where you can paste a Dockerfile and get an instant health report. The CLI adds fix/compare/badge/format and project-context checks.
+
 ![DockRx demo](assets/dockrx-demo.svg)
 
 > **Alpha note:** image-size and build-time numbers in the report are **heuristic estimates**, not measured from real builds. `dockrx fix` / `suggest` auto-fix a **subset** of rules; others are recommendations only.
@@ -23,8 +25,8 @@ Instead of stopping at lint-style warnings, DockRx explains impact, prioritizes 
 $ dockrx analyze examples/test
 
 Overall Health
-██████████░░░░░░░░░░
-52 / 100
+█████████░░░░░░░░░░░
+47 / 100
 Needs Attention · Grade: F (Poor)
 
 Quick Wins
@@ -52,10 +54,12 @@ Estimated Results
 
 ```bash
 git clone https://github.com/kiwi-07/docrx.git
-cd dockrx
+cd docrx
 uv sync
 uv run dockrx --version
 ```
+
+> **Naming note:** the GitHub repo is `docrx`, but the installed CLI and Python package are `dockrx`. Clone into `docrx`, run the tool as `dockrx`.
 
 ### From PyPI
 
@@ -183,6 +187,7 @@ Full roadmap: [`docs/roadmap.md`](docs/roadmap.md)
 ## Documentation
 
 - Commands: [`docs/commands.md`](docs/commands.md)
+- Web playground & API: [dockrx.vercel.app](https://dockrx.vercel.app) · [`docs/web-api.md`](docs/web-api.md)
 - Extending DockRx: [`docs/extending.md`](docs/extending.md)
 - Architecture and scope: [`docs/architecture.md`](docs/architecture.md)
 - Roadmap: [`docs/roadmap.md`](docs/roadmap.md)

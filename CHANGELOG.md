@@ -5,6 +5,32 @@ All notable changes to DockRx are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Web API endpoints powering the [live playground](https://dockrx.vercel.app): `/api/analyze`,
+  `/api/fix`, `/api/format`, `/api/compare`, `/api/badge`, and `/api/health` (see `docs/web-api.md`)
+- `DOCKRX_CORS_ORIGINS` to restrict CORS origins for the web API (defaults to `*`)
+- `has_dockerignore` request field so the analyzer can suppress DRX005 when a `.dockerignore` exists
+- Regression test suites for scoring, CLI exit codes, and the web API
+
+### Changed
+- **Scoring:** overall score now uses a "spill" model — every finding's penalty counts toward the
+  overall score even when its category is already floored at 0, so fixing any finding always moves
+  the overall number. Category scores are still displayed floored at 0. Scores are meaningfully
+  harsher than 0.1.0; `examples/realworld/RESULTS.md` has been regenerated.
+- `analyze` applies `fail-on-severity` consistently across all output modes, including
+  `--score-only` and `--badge`
+- `analyze` warns (on stderr) when a directory contains more than one Dockerfile
+
+### Fixed
+- `analyze` rejects empty or invalid Dockerfiles (no `FROM`) with exit code `2`
+- `analyze` treats `--json`, `--score-only`, and `--badge` as mutually exclusive (exit `2`)
+- `format` treats `--check`, `--write`, and `--diff` as mutually exclusive (exit `2`)
+- `explain` on an unknown rule id now exits `1` (was `2`)
+- `fix` / `suggest` refuse to prompt in a non-interactive (no-TTY) environment; require
+  `--yes`/`--dry-run`, otherwise exit `2`
+
 ## [0.1.0] — 2026-07-16
 
 ### Added

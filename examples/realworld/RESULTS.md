@@ -4,9 +4,9 @@ Analyzed 18 Dockerfiles from popular open-source projects
 (see [SOURCES.md](SOURCES.md)). Scores include each project's
 `.dockerignore` when one exists upstream.
 
-> **Scoring note (Unreleased):** DockRx now uses a "spill" scoring model where every finding's
-> penalty counts toward the overall score (see `CHANGELOG.md`). Scores below are lower than the
-> pre-0.1.0 numbers by design — don't compare them directly against older tables.
+> **Scoring note:** DockRx uses a "spill" scoring model where every finding's penalty counts
+> toward the overall score (see `CHANGELOG.md`). Scores below reflect the 0.1.0 model — don't
+> compare them directly against pre-release tables.
 
 ## Scoreboard
 
